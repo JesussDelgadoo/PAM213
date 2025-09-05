@@ -1,3 +1,4 @@
+import tkinter as tk
 class inicioPAM:
     def __init__(self):
         pass
@@ -9,3 +10,11 @@ class inicioPAM:
         return "Fechas de Parciales\n 1er Parcial: 30 de Septiembre\n 2do Parcial: 03 de Octubre\n 3do Parcial: 02 de Diciembre\n Examen Final: 08 de Diciembre"
     def porcent(self):
         return "Porcentajes por Parcial\n 1er Parcial:\n Evidencia de Conocimiento 40%\n Evicendia de desemeño 20%\n Evicendia de producto 30%\n Proyecyo Integrador 10%\n 2do Parcial:\n Evidencia de Conocimiento 40%\n Evicendia de desemeño 20%\n Evicendia de producto 20%\n Proyecyo Integrador 20%\n 3er Parcial:\n Evidencia de Conocimiento 20%\n Evicendia de desemeño 10%\n Evicendia de producto 40%\n Proyecyo Integrador 30% "
+
+ventana = tk.Tk()
+ventana.title("Inicio PAM")
+ventana.geometry("600x400")
+
+etiqueta = tk.Label(ventana,text="Prueba")
+
+ventana.mainloop()
