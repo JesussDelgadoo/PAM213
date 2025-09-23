@@ -9,6 +9,6 @@ const persona = {
 
 // Destructuracion:
 
-const { nombre, edad, ciudad, pais} = persona;
+const { nombre, edad, direccion} = persona;
 
-console.log("Me Llamo " + nombre + ", tengo " + edad + " años y vivo en " + ciudad)
+console.log("Me Llamo " + nombre + ", tengo " + edad + " años y vivo en " + direccion.ciudad)
