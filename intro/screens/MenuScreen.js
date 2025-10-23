@@ -37,7 +37,7 @@ export default function MenuScreen() {
         default:
           return (
               <View style={styles.botonesContainer}>
-                <Text>Menu de Practicas</Text>
+                <Text style = {styles.titulo}>Menu de Practicas</Text>
                 <Button title='Pract:Contador' onPress={()=>setScreen('contador')}/>
                 <Button title='Pract:Buttons' onPress={()=>setScreen('botones')}/>
                 <Button title='Pract:Text Input & Alert' onPress={()=>setScreen('texto')}/>
@@ -60,5 +60,12 @@ const styles = StyleSheet.create({
       alignItems: 'center',
       justifyContent: 'center',
       gap: 30,
-  }
+      backgroundColor: '#2e2e2eff',
+  },
+  titulo:{
+    color: 'white',
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 15,
+  },
 })
