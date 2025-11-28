@@ -1,5 +1,6 @@
 import { Platform } from "react-native"
 import * as SQLite from 'expo-sqlite'
+import { FlatList } from "react-native-web";
 
 class DatabaseService {
     constructor() {
@@ -57,6 +58,43 @@ class DatabaseService {
                 nombre,
                 fecha_creacion: new Date().toISOString()
             };
+        }
+    }
+
+    async update(id, nombre) {
+        if (Platform.OS === 'web') {
+            const usuarios = await this.getALL();
+            const index = usuarios.findIndex( u => u.id === id);
+
+            if (index !== -1) {
+                usuarios[index].nombre =nombre;
+                localStorage.setItem(this.storageKey, JSON.stringify(usuarios));
+                return true;
+            }
+            return false;
+        } else {
+            const result = await this.db.runAsync(
+                'UPDATE usuarios SET nombre = ? WHERE id = ?',
+                nombre,
+                id
+            );
+            return result;
+        }
+    }
+
+    async delete(id) {
+        if ( Platform.OS === 'web') {
+            const usuarios = await this.getALL();
+            const nuevosUsuarios = usuarios.filter(u => u.id !== id);
+
+            localStorage.setItem(this.storageKey, JSON.stringify(nuevosUsuarios));
+            return true;
+        } else {
+            const result = await this.db.runAsync(
+                'DELETE FROM usuarios WHERE id = ?',
+                id
+            );
+            return result;
         }
     }
 }

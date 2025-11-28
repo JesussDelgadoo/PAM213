@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, use } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList,StyleSheet, Alert,ActivityIndicator,Platform } from 'react-native';
 import { UsuarioController } from '../controllers/UsuarioController';
 
@@ -6,10 +6,11 @@ const controller = new UsuarioController();
 
 export default function InsertUsuarioScreen() {
 
-  const [usuarios, setUsuarios] = useState([]);
-  const [nombre, setNombre] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [guardando, setGuardando] = useState(false);
+  const [usuarios, setUsuarios] = useState([])
+  const [nombre, setNombre] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [guardando, setGuardando] = useState(false)
+  const [editarId, setEditarId] = useState(null)
 
 
   // SELECT - Cargar usuarios desde la BD
@@ -60,6 +61,54 @@ const handleAgregar = async () => {
   }
 };
 
+const handleActualizar = async () => {
+  if (guardando) return;
+  try {
+    setGuardando(true);
+    const usuarioActualizado = await controller.actualizarUsuario(editarId, nombre);
+    Alert.alert(
+      'Usuario Actualizado',
+      `"${usuarioActualizado.nombre}" actualizado correctamente`
+    );
+    setNombre('');
+    setEditarId(null);
+  } catch (error) {
+    Alert.alert('Error', error.message);
+  } finally {
+    setGuardando(false);
+  }
+}
+
+const handleEliminar = (id) => {
+  Alert.alert(
+    'Eliminar',
+    '¿Deseas eliminar este usuario?',
+    [
+      {text: 'Cancelar', style: 'cancel'},
+      {
+        text: 'Eliminar',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await controller.eliminarUsuario(id);
+            if (editarId === id) cancelarEdicion();
+          } catch (error) {
+            Alert.alert('Error', error.message)
+          }
+        }
+      }
+    ]
+  )
+}
+const prepararEdicion = (item) => {
+    setNombre(item.nombre);
+    setEditarId(item.id);
+  };
+
+  const cancelarEdicion = () => {
+    setNombre('');
+    setEditarId(null);
+  };
 // Renderizar cada usuario
 const renderUsuario = ({ item, index }) => (
   <View style={styles.userItem}>
@@ -70,50 +119,75 @@ const renderUsuario = ({ item, index }) => (
       <Text style={styles.userName}>{item.nombre}</Text>
       <Text style={styles.userId}>ID: {item.id}</Text>
       <Text style={styles.userDate}>
-        {new Date(item.fechaCreacion).toLocaleDateString('es-MX', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        })}
+        {new Date(item.fechaCreacion || Date.now()).toLocaleDateString()}
       </Text>
+    </View>
+    <View style={styles.actionButtons}>
+      <TouchableOpacity style={styles.btnEdit} onPress={() => prepararEdicion(item)}>
+        <Text style={styles.actionText}>Editar</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.btnDelete} onPress={() => handleEliminar(item.id)}>
+        <Text style={styles.actionText}>X</Text>
+      </TouchableOpacity>
     </View>
   </View>
 );
 
   return (
-    
+
     <View style={styles.container}>
 
       {/* Zona del encabezado */}
 
-      <Text style={styles.title}> INSERT & SELECT</Text>
+      <Text style={styles.title}> CRUD USUARIOS</Text>
       <Text style={styles.subtitle}>
         {Platform.OS === 'web' ? ' WEB (LocalStorage)' : ` ${Platform.OS.toUpperCase()} (SQLite)`}
       </Text>
 
-      {/* Zona del INSERT */}
+      {/* Zona del INSERT / UPDATE */}
 
       <View style={styles.insertSection}>
-        <Text style={styles.sectionTitle}> Insertar Usuario</Text>
-        
+        <Text style={styles.sectionTitle}> 
+            {editarId ? 'Editar Usuario' : 'Insertar Usuario'}
+        </Text>
+
         <TextInput
-          style={styles.input}
+          style={[styles.input, editarId && styles.inputEditing]}
           placeholder="Escribe el nombre del usuario"
           value={nombre}
           onChangeText={setNombre}
           editable={!guardando}
         />
 
-        <TouchableOpacity 
-          style={[styles.button, guardando && styles.buttonDisabled]} 
-          onPress={handleAgregar}
-          disabled={guardando} >
+        {/* Lógica de Botones: Mostrar Agregar o (Actualizar + Cancelar) */}
+        {editarId ? (
+            <View style={styles.editButtonsContainer}>
+                <TouchableOpacity
+                    style={[styles.button, styles.buttonUpdate, styles.flex1]}
+                    onPress={handleActualizar}
+                    disabled={guardando} >
+                    <Text style={styles.buttonText}>
+                        {guardando ? 'Guardando...' : 'Actualizar'}
+                    </Text>
+                </TouchableOpacity>
 
-          <Text style={styles.buttonText}>
-            {guardando ? ' Guardando...' : 'Agregar Usuario'}
-          </Text>
-
-        </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.button, styles.buttonCancel, styles.flex1]}
+                    onPress={cancelarEdicion}
+                    disabled={guardando} >
+                    <Text style={styles.cancelText}>Cancelar</Text>
+                </TouchableOpacity>
+            </View>
+        ) : (
+            <TouchableOpacity
+                style={[styles.button, guardando && styles.buttonDisabled]}
+                onPress={handleAgregar}
+                disabled={guardando} >
+                <Text style={styles.buttonText}>
+                    {guardando ? ' Guardando...' : 'Agregar Usuario'}
+                </Text>
+            </TouchableOpacity>
+        )}
 
       </View>
 
@@ -127,7 +201,7 @@ const renderUsuario = ({ item, index }) => (
 
           <Text style={styles.sectionTitle}>Lista de Usuarios</Text>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.refreshButton}
             onPress={cargarUsuarios} >
             <Text style={styles.refreshText}>Recargar</Text>
@@ -140,7 +214,7 @@ const renderUsuario = ({ item, index }) => (
             <ActivityIndicator size="large" color="#007AFF" />
             <Text style={styles.loadingText}>Cargando usuarios...</Text>
           </View>
-           ) : (
+        ) : (
           <FlatList
             data={usuarios}
             keyExtractor={(item) => item.id.toString()}
@@ -222,17 +296,40 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: '#fafafa',
   },
+  inputEditing: {
+    borderColor: '#ffa726',
+    backgroundColor: '#fffbf0',
+    borderWidth: 2
+  },
   button: {
     backgroundColor: '#007AFF',
-    padding: 16,
+    paddingVertical: 15,
     borderRadius: 8,
     alignItems: 'center',
+  },
+  flex1: {
+    flex:1,
+  },
+  editButtonsContainer: {
+    flexDirection: 'row',
+    gap: 10
+  },
+  buttonUpdate: {
+    backgroundColor: '#ffa726',
+  },
+  buttonCancel: {
+    backgroundColor: '#e0e0e0',
   },
   buttonDisabled: {
     backgroundColor: '#ccc',
   },
   buttonText: {
     color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  cancelText: {
+    color: '#555',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -262,12 +359,19 @@ const styles = StyleSheet.create({
   },
   userItem: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     backgroundColor: '#f9f9f9',
     padding: 15,
     borderRadius: 8,
     marginBottom: 10,
     borderLeftWidth: 4,
     borderLeftColor: '#007AFF',
+  },
+  userInfoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1
   },
   userNumber: {
     width: 35,
@@ -301,6 +405,29 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
   },
+  // Estilos para los botones pequeños de la lista
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 8,
+    marginLeft: 8
+  },
+  btnEdit: {
+    backgroundColor: '#ffa726',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6
+  },
+  btnDelete: {
+    backgroundColor: '#ef5350',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6
+  },
+  actionText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 12
+  },
   emptyContainer: {
     alignItems: 'center',
     paddingVertical: 40,
@@ -317,29 +444,5 @@ const styles = StyleSheet.create({
   emptySubtext: {
     fontSize: 14,
     color: '#bbb',
-  },
-  mvcInfo: {
-    backgroundColor: '#e3f2fd',
-    padding: 15,
-    marginHorizontal: 15,
-    marginBottom: 15,
-    borderRadius: 8,
-    borderLeftWidth: 4,
-    borderLeftColor: '#2196F3',
-  },
-  mvcTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#1976D2',
-    marginBottom: 8,
-  },
-  mvcText: {
-    fontSize: 12,
-    color: '#555',
-    lineHeight: 18,
-  },
-  bold: {
-    fontWeight: 'bold',
-    color: '#1976D2',
   },
 });
